@@ -11,6 +11,8 @@ class ResumeReviewService:
         self.pipeline = ResumePipeline()
         self.jd_parser = JDParser()
 
+    # ----------------------------------------------------
+
     def read_job_description(self):
 
         print()
@@ -43,6 +45,8 @@ class ResumeReviewService:
 
         return "\n".join(lines)
 
+    # ----------------------------------------------------
+
     def run(self):
 
         print()
@@ -56,6 +60,24 @@ class ResumeReviewService:
         jd_text = self.read_job_description()
 
         jd = self.jd_parser.parse(jd_text)
+
+        # =====================================================
+        # DEBUG OUTPUT (Temporary)
+        # =====================================================
+
+        print()
+        print("=" * 70)
+        print("DEBUG - JD OBJECT")
+        print("=" * 70)
+        print("Job Title        :", jd.job_title)
+        print("Skills           :", jd.skills)
+        print("Responsibilities :", jd.responsibilities)
+        print("Education        :", jd.education)
+        print("Experience       :", jd.experience)
+        print("=" * 70)
+        print()
+
+        # =====================================================
 
         self.pipeline.run(
             resume,
