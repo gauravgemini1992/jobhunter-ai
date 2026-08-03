@@ -6,11 +6,15 @@ class ATSReportGenerator:
 
     BAR_LENGTH = 30
 
+    # ----------------------------------------------------
+
     def progress_bar(self, score):
 
         filled = int((score / 100) * self.BAR_LENGTH)
 
         return "█" * filled + "░" * (self.BAR_LENGTH - filled)
+
+    # ----------------------------------------------------
 
     def stars(self, score):
 
@@ -28,6 +32,8 @@ class ATSReportGenerator:
 
         return "★☆☆☆☆"
 
+    # ----------------------------------------------------
+
     def recruiter_recommendation(self, score):
 
         if score >= 90:
@@ -44,6 +50,8 @@ class ATSReportGenerator:
 
         return "Needs Improvement"
 
+    # ----------------------------------------------------
+
     def print_report(self, ats_report, optimization):
 
         print()
@@ -54,11 +62,15 @@ class ATSReportGenerator:
         print()
 
         print("Overall ATS Score")
-        print(f"{self.progress_bar(ats_report.overall_score)} {ats_report.overall_score}%")
+        print(
+            f"{self.progress_bar(ats_report.overall_score)} "
+            f"{ats_report.overall_score}%"
+        )
 
         print()
 
         print("Estimated Score After Optimization")
+
         print(
             f"{self.progress_bar(optimization['estimated_score'])} "
             f"{optimization['estimated_score']}%"
@@ -85,6 +97,7 @@ class ATSReportGenerator:
                 print(f"✔ {item}")
 
         else:
+
             print("No major strengths identified.")
 
         print()
@@ -98,6 +111,7 @@ class ATSReportGenerator:
                 print(f"✘ {item}")
 
         else:
+
             print("No major weaknesses identified.")
 
         print()
@@ -111,6 +125,7 @@ class ATSReportGenerator:
                 print(f"🔴 {item}")
 
         else:
+
             print("None")
 
         print()
@@ -122,6 +137,7 @@ class ATSReportGenerator:
                 print(f"🟡 {item}")
 
         else:
+
             print("None")
 
         print()
@@ -133,31 +149,87 @@ class ATSReportGenerator:
                 print(f"🟢 {item}")
 
         else:
+
             print("None")
 
         print()
         print("-" * 70)
 
-        print("SUMMARY SUGGESTION")
-        print()
-        print(optimization["summary_suggestion"])
+        # =====================================================
+        # AI RESUME OPTIMIZER
+        # =====================================================
+
+        print("AI RESUME OPTIMIZER")
 
         print()
+        print("Professional Summary")
+        print()
+
+        print(
+            optimization["professional_summary"]
+        )
+
+        print()
+
+        print("Suggested Experience Improvements")
+        print()
+
+        for bullet in optimization["experience_bullets"]:
+
+            print(f"✔ {bullet}")
+
+        print()
+
+        print("Recommended Skills To Add")
+        print()
+
+        for skill in optimization["skills_to_add"]:
+
+            print(f"✔ {skill}")
+
+        print()
+
+        print("-" * 70)
+
+        print("SUMMARY SUGGESTION")
+        print()
+
+        print(
+            optimization["summary_suggestion"]
+        )
+
+        print()
+
         print("-" * 70)
 
         print("ACTION ITEMS")
+        print()
 
-        for i, item in enumerate(optimization["action_items"], start=1):
+        for i, item in enumerate(
+            optimization["action_items"],
+            start=1,
+        ):
 
             print(f"{i}. {item}")
 
         print()
+
         print("-" * 70)
 
         print("RECRUITER RECOMMENDATION")
+        print()
 
-        print(self.stars(ats_report.overall_score))
-        print(self.recruiter_recommendation(ats_report.overall_score))
+        print(
+            self.stars(
+                ats_report.overall_score
+            )
+        )
+
+        print(
+            self.recruiter_recommendation(
+                ats_report.overall_score
+            )
+        )
 
         print("=" * 70)
         print()

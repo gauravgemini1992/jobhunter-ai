@@ -1,96 +1,283 @@
-from typing import List
+from __future__ import annotations
+
+import logging
+from typing import Dict, List, Tuple
 
 from app.engines.smart_skill_matcher import SmartSkillMatcher
 from app.models.ats_report import ATSReport
 from app.models.jd_model import JDModel
 from app.models.recommendation import Recommendation
 from app.utils.scoring import (
-    percentage,
     overall_score,
+    percentage,
     strengths,
     weaknesses,
 )
+from app.data.skill_families import SKILL_FAMILIES
+
+logger = logging.getLogger(__name__)
 
 
 class ATSEngine:
     """
-    Core ATS Matching Engine
+    Core ATS Matching Engine.
+
+    Responsibilities
+    ----------------
+    - Build searchable resume text
+    - Calculate ATS component scores
+    - Generate strengths & weaknesses
+    - Generate recommendations
+    - Produce the final ATS report
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.matcher = SmartSkillMatcher()
 
-    # ----------------------------------------------------
-    # Build searchable resume text
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
+    # Resume Processing
+    # ------------------------------------------------------------------
 
-    def _build_resume_text(self, resume: dict) -> str:
+    def _build_resume_text(self, resume: Dict) -> str:
+        """
+        Convert structured resume data into a searchable text blob.
+        """
 
-        text = ""
+        sections: List[str] = []
 
-        text += resume.get("summary", "") + "\n"
-        text += resume.get("skills", "") + "\n"
-        text += resume.get("education", "") + "\n"
+        for field in ("summary", "skills", "education"):
+            value = resume.get(field)
+            if value:
+                sections.append(str(value))
 
-        for exp in resume.get("experience", []):
+        for experience in resume.get("experience", []):
 
-            if isinstance(exp, dict):
+            # Experience object from resume_parser.py
+            if hasattr(experience, "designation"):
 
-                text += exp.get("title", "") + "\n"
-                text += exp.get("company", "") + "\n"
-                text += exp.get("description", "") + "\n"
+                description = experience.description
+
+                if isinstance(description, list):
+                    description = " ".join(description)
+
+                sections.extend(
+                    filter(
+                        None,
+                        [
+                            experience.designation,
+                            experience.company,
+                            experience.duration,
+                            description,
+                        ],
+                    )
+                )
+
+            # Dictionary support
+            elif isinstance(experience, dict):
+
+                description = experience.get("description")
+
+                if isinstance(description, list):
+                    description = " ".join(description)
+
+                sections.extend(
+                    filter(
+                        None,
+                        [
+                            experience.get("designation"),
+                            experience.get("company"),
+                            experience.get("duration"),
+                            description,
+                        ],
+                    )
+                )
 
             else:
 
-                text += str(exp) + "\n"
+                sections.append(str(experience))
 
-        return text.lower()
+        return "\n".join(sections).lower()
+    # ------------------------------------------------------------------
+    # Generic Matching
+    # ------------------------------------------------------------------
 
-    # ----------------------------------------------------
-    # Skill Matching
-    # ----------------------------------------------------
+    def _match_items(
+        self,
+        items: List[str],
+        resume_text: str,
+    ) -> Tuple[int, List[str], List[str]]:
+        """
+        Smart matching with Skill Family support.
+
+        If one member of a family matches, the family is counted once.
+        """
+
+        matched: List[str] = []
+        missing: List[str] = []
+
+        matched_families = set()
+        seen = set()
+
+        for item in items:
+
+            item = item.strip()
+
+            if not item:
+                continue
+
+            normalized = item.lower()
+
+            if normalized in seen:
+                continue
+
+            seen.add(normalized)
+
+            family_name = None
+
+            # -----------------------------------
+            # Find the family (if any)
+            # -----------------------------------
+
+            for family, members in SKILL_FAMILIES.items():
+
+                if normalized in members:
+                    family_name = family
+                    break
+
+            # -----------------------------------
+            # Family Match
+            # -----------------------------------
+
+            if family_name:
+
+                if family_name in matched_families:
+                    matched.append(item)
+                    continue
+
+                family_members = SKILL_FAMILIES[family_name]
+
+                found = False
+
+                for member in family_members:
+
+                    if self.matcher.match(
+                        member,
+                        resume_text,
+                    ):
+                        found = True
+                        break
+
+                if found:
+
+                    matched.append(item)
+                    matched_families.add(family_name)
+
+                else:
+
+                    missing.append(item)
+
+            # -----------------------------------
+            # Normal Skill
+            # -----------------------------------
+
+            else:
+
+                if self.matcher.match(
+                    item,
+                    resume_text,
+                ):
+                    matched.append(item)
+
+                else:
+                    missing.append(item)
+
+        score = percentage(
+            len(matched),
+            len(seen),
+        )
+
+        return (
+            score,
+            matched,
+            missing,
+        )
+        # ------------------------------------------------------------------
+    # Skill Score
+    # ------------------------------------------------------------------
 
     def _calculate_skill_score(
         self,
         resume_text: str,
         jd: JDModel,
-    ):
+    ) -> Tuple[int, List[str], List[str]]:
+
+        return self._match_items(jd.skills, resume_text)
+
+    # ------------------------------------------------------------------
+    # Responsibility Score
+    # ------------------------------------------------------------------
+
+    def _calculate_responsibility_score(
+        self,
+        resume_text: str,
+        jd: JDModel,
+    ) -> Tuple[int, List[str], List[str]]:
 
         matched = []
         missing = []
 
-        for skill in jd.skills:
+        for responsibility in jd.responsibilities:
 
-            if self.matcher.match(skill, resume_text):
+            text = responsibility.lower()
 
-                matched.append(skill)
+            words = [
+                word
+                for word in text.replace(".", "").replace(",", "").split()
+                if len(word) > 3
+            ]
 
+            hits = 0
+
+            for word in words:
+
+                if word in resume_text:
+                    hits += 1
+
+            if hits >= max(2, len(words) // 3):
+                matched.append(responsibility)
             else:
-
-                missing.append(skill)
+                missing.append(responsibility)
 
         score = percentage(
             len(matched),
-            len(jd.skills),
+            len(jd.responsibilities),
         )
 
-        return score, matched, missing
-
-    # ----------------------------------------------------
-    # Experience Matching
-    # ----------------------------------------------------
+        return (
+            score,
+            matched,
+            missing,
+        )
+    # ------------------------------------------------------------------
+    # Experience Score
+    # ------------------------------------------------------------------
 
     def _calculate_experience_score(
         self,
-        resume: dict,
+        resume: Dict,
         jd: JDModel,
-    ):
+    ) -> int:
+        """
+        Current implementation estimates experience from the
+        number of experience entries.
+        """
 
-        resume_experience = len(
-            resume.get("experience", [])
-        )
+        resume_experience = len(resume.get("experience", []))
 
         if jd.experience is None:
+            return 100
+
+        if jd.experience <= 0:
             return 100
 
         if resume_experience >= jd.experience:
@@ -100,93 +287,64 @@ class ATSEngine:
             (resume_experience / jd.experience) * 100
         )
 
-    # ----------------------------------------------------
-    # Education Matching
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
+    # Education Score
+    # ------------------------------------------------------------------
 
     def _calculate_education_score(
         self,
-        resume: dict,
+        resume: Dict,
         jd: JDModel,
-    ):
-
-        education = resume.get(
-            "education",
-            "",
-        ).lower()
+    ) -> int:
 
         if not jd.education:
             return 100
 
-        matched = 0
+        education_text = str(
+            resume.get("education", "")
+        ).lower()
 
-        for degree in jd.education:
-
-            if degree.lower() in education:
-                matched += 1
+        matched = sum(
+            1
+            for degree in jd.education
+            if degree.lower() in education_text
+        )
 
         return percentage(
             matched,
             len(jd.education),
         )
-        # ----------------------------------------------------
-    # Responsibility Matching
-    # ----------------------------------------------------
 
-    def _calculate_responsibility_score(
-        self,
-        resume_text: str,
-        jd: JDModel,
-    ):
-
-        matched = []
-        missing = []
-
-        for responsibility in jd.responsibilities:
-
-            if self.matcher.match(responsibility, resume_text):
-
-                matched.append(responsibility)
-
-            else:
-
-                missing.append(responsibility)
-
-        score = percentage(
-            len(matched),
-            len(jd.responsibilities),
-        )
-
-        return score, matched, missing
-
-    # ----------------------------------------------------
-    # Keyword Matching
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
+    # Keyword Score
+    # ------------------------------------------------------------------
 
     def _calculate_keyword_score(
         self,
         resume_text: str,
         jd: JDModel,
-    ):
+    ) -> int:
 
         if not jd.keywords:
             return 100
 
-        matched = 0
-
-        for keyword in jd.keywords:
-
-            if self.matcher.match(keyword, resume_text):
-                matched += 1
+        matched = sum(
+            1
+            for keyword in jd.keywords
+            if self.matcher.match(
+                keyword,
+                resume_text,
+            )
+        )
 
         return percentage(
             matched,
             len(jd.keywords),
         )
 
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
     # Strengths
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
 
     def _generate_strengths(
         self,
@@ -195,9 +353,9 @@ class ATSEngine:
 
         return strengths(matched_skills)
 
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
     # Weaknesses
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
 
     def _generate_weaknesses(
         self,
@@ -206,9 +364,9 @@ class ATSEngine:
 
         return weaknesses(missing_skills)
 
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
     # Recommendations
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
 
     def _generate_recommendations(
         self,
@@ -216,25 +374,60 @@ class ATSEngine:
         missing_responsibilities: List[str],
     ) -> List[Recommendation]:
 
-        recommendations = []
+        recommendations: List[Recommendation] = []
+
+        handled_families = set()
 
         for skill in missing_skills:
 
-            recommendations.append(
-                Recommendation(
-                    skill=skill,
-                    priority="HIGH",
-                    message=f"Consider adding experience with '{skill}' if applicable."
-                )
-            )
+            family_name = None
 
+            for family, members in SKILL_FAMILIES.items():
+
+                if skill.lower() in members:
+                    family_name = family
+                    break
+
+            if family_name:
+
+                if family_name in handled_families:
+                    continue
+
+                handled_families.add(family_name)
+
+                recommendations.append(
+                    Recommendation(
+                        skill=family_name,
+                        priority="HIGH",
+                        message=(
+                            f"Consider adding experience with "
+                            f"'{family_name}' related technologies if applicable."
+                        ),
+                    )
+                )
+
+            else:
+
+                recommendations.append(
+                    Recommendation(
+                        skill=skill,
+                        priority="HIGH",
+                        message=(
+                            f"Consider adding experience with "
+                            f"'{skill}' if applicable."
+                        ),
+                    )
+                )
         for responsibility in missing_responsibilities:
 
             recommendations.append(
                 Recommendation(
                     skill=responsibility,
                     priority="MEDIUM",
-                    message=f"Highlight work related to '{responsibility}' if applicable."
+                    message=(
+                        f"Highlight work related to "
+                        f"'{responsibility}' if applicable."
+                    ),
                 )
             )
 
@@ -244,24 +437,34 @@ class ATSEngine:
                 Recommendation(
                     skill="Profile",
                     priority="LOW",
-                    message="Excellent alignment with the job description."
+                    message=(
+                        "Excellent alignment with the "
+                        "job description."
+                    ),
                 )
             )
 
         return recommendations
-        # ----------------------------------------------------
+
+    # ------------------------------------------------------------------
     # Main ATS Calculation
-    # ----------------------------------------------------
+    # ------------------------------------------------------------------
 
     def calculate_match(
         self,
-        resume: dict,
+        resume: Dict,
         jd: JDModel,
     ) -> ATSReport:
 
-        resume_text = self._build_resume_text(resume)
+        logger.info(
+            "Starting ATS calculation for '%s'",
+            jd.job_title,
+        )
 
-        # Skill Score
+        resume_text = self._build_resume_text(
+            resume
+        )
+
         (
             skill_score,
             matched_skills,
@@ -271,19 +474,20 @@ class ATSEngine:
             jd,
         )
 
-        # Experience Score
-        experience_score = self._calculate_experience_score(
-            resume,
-            jd,
+        experience_score = (
+            self._calculate_experience_score(
+                resume,
+                jd,
+            )
         )
 
-        # Education Score
-        education_score = self._calculate_education_score(
-            resume,
-            jd,
+        education_score = (
+            self._calculate_education_score(
+                resume,
+                jd,
+            )
         )
 
-        # Responsibility Score
         (
             responsibility_score,
             matched_responsibilities,
@@ -293,13 +497,13 @@ class ATSEngine:
             jd,
         )
 
-        # Keyword Score
-        keyword_score = self._calculate_keyword_score(
-            resume_text,
-            jd,
+        keyword_score = (
+            self._calculate_keyword_score(
+                resume_text,
+                jd,
+            )
         )
 
-        # Overall Score
         final_score = overall_score(
             skill_score,
             experience_score,
@@ -308,7 +512,6 @@ class ATSEngine:
             keyword_score,
         )
 
-        # Build ATS Report
         report = ATSReport(
             overall_score=final_score,
             skill_score=skill_score,
@@ -321,15 +524,20 @@ class ATSEngine:
             matched_responsibilities=matched_responsibilities,
             missing_responsibilities=missing_responsibilities,
             strengths=self._generate_strengths(
-                matched_skills
+                matched_skills,
             ),
             weaknesses=self._generate_weaknesses(
-                missing_skills
+                missing_skills,
             ),
             recommendations=self._generate_recommendations(
                 missing_skills,
                 missing_responsibilities,
             ),
+        )
+
+        logger.info(
+            "ATS completed. Final score: %s",
+            final_score,
         )
 
         return report

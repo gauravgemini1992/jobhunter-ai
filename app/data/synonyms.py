@@ -1,100 +1,157 @@
 """
+JobHunter AI
 Skill Synonyms Database
+
+Contains ONLY true aliases/synonyms.
+Do NOT add related technologies here.
 """
 
 SYNONYMS = {
 
+    # --------------------------------------------------
+    # Customer Success
+    # --------------------------------------------------
+
     "customer success": [
-        "client success",
+        "customer success management",
         "customer success manager",
+        "client success",
         "customer excellence"
     ],
 
-    "enterprise accounts": [
-        "enterprise account",
-        "key account",
-        "strategic account",
-        "global account",
-        "fortune 500",
-        "fortune 100"
-    ],
-
-"stakeholder management": [
-    "stakeholder",
-    "stakeholders",
-    "executive stakeholder",
-    "executive stakeholders",
-    "executive relationship",
-    "executive relationships",
-    "c-suite",
-    "cxo",
-    "decision maker"
-],
-
-    "relationship management": [
-        "client relationship",
-        "customer relationship",
-        "executive relationship",
-        "relationship building"
-    ],
-
-    "renewals": [
-        "renewal",
-        "renewal management",
-        "contract renewal"
+    "customer onboarding": [
+        "client onboarding",
+        "user onboarding"
     ],
 
     "customer retention": [
         "retention",
-        "customer loyalty",
-        "repeat business"
+        "client retention",
+        "customer loyalty"
     ],
 
-    "upselling": [
-        "upsell",
-        "account expansion",
-        "revenue expansion",
-        "expansion opportunity"
+    "relationship management": [
+        "client relationship management",
+        "customer relationship management",
+        "relationship building"
     ],
 
-    "cross selling": [
-        "cross sell",
-        "cross-sell"
+    "stakeholder management": [
+        "stakeholder engagement",
+        "executive stakeholder management"
+    ],
+
+    "customer health score": [
+        "customer health",
+        "health score",
+        "account health"
     ],
 
     "qbr": [
-    "qbr",
-    "quarterly business review",
-    "quarterly business reviews",
-    "quarterly review",
-    "quarterly reviews",
-    "business review",
-    "business reviews"
-],
-
-    "customer health score": [
-        "account health",
-        "customer health",
-        "health check"
+        "quarterly business review",
+        "quarterly business reviews",
+        "business review",
+        "business reviews",
+        "executive business review",
+        "ebr"
     ],
+
+    # --------------------------------------------------
+    # CRM
+    # --------------------------------------------------
+
+    "crm": [
+        "customer relationship management"
+    ],
+
+    "salesforce": [
+        "salesforce crm"
+    ],
+
+    "hubspot": [
+        "hubspot crm"
+    ],
+
+    # --------------------------------------------------
+    # Analytics
+    # --------------------------------------------------
+
+    "power bi": [
+        "microsoft power bi",
+        "powerbi"
+    ],
+
+    "tableau": [
+        "tableau desktop"
+    ],
+
+    "excel": [
+        "microsoft excel",
+        "ms excel"
+    ],
+
+    "sql": [
+        "structured query language"
+    ],
+
+    # --------------------------------------------------
+    # AI
+    # --------------------------------------------------
+
+    "ai": [
+        "artificial intelligence"
+    ],
+
+    "generative ai": [
+        "gen ai",
+        "genai"
+    ],
+
+    "chatgpt": [
+        "gpt",
+        "gpt-3",
+        "gpt-3.5",
+        "gpt-4",
+        "gpt-4o",
+        "gpt-5",
+        "openai chatgpt"
+    ],
+
+    "prompt engineering": [
+        "prompt design",
+        "prompt optimization"
+    ],
+
+    # --------------------------------------------------
+    # SaaS
+    # --------------------------------------------------
 
     "saas": [
         "software as a service"
     ],
 
+    # --------------------------------------------------
+    # APIs
+    # --------------------------------------------------
+
     "api": [
         "apis",
-        "rest api",
-        "graphql"
+        "application programming interface"
     ],
 
-    "ai": [
-        "artificial intelligence",
-        "generative ai",
-        "openai",
-        "chatgpt",
-        "copilot",
-        "gemini",
-        "claude"
+    "rest api": [
+        "restful api"
+    ],
+
+    # --------------------------------------------------
+    # Project Management
+    # --------------------------------------------------
+
+    "jira": [
+        "atlassian jira"
+    ],
+
+    "confluence": [
+        "atlassian confluence"
     ]
 }

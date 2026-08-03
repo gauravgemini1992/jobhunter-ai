@@ -1,3 +1,4 @@
+from app.dashboard.ats_dashboard import ATSDashboard
 from app.engines.ats_engine import ATSEngine
 from app.optimizer.resume_optimizer import ResumeOptimizer
 from app.reports.ats_report_generator import ATSReportGenerator
@@ -6,23 +7,27 @@ from app.reports.pdf_report_generator import PDFReportGenerator
 
 class ResumePipeline:
     """
-    End-to-end Resume Review Pipeline.
+    End-to-End Resume Review Pipeline
 
-    Flow:
-        Resume
-            ↓
-        ATS Engine
-            ↓
-        Resume Optimizer
-            ↓
-        Console ATS Report
-            ↓
-        PDF ATS Report
+    Flow
+    ----
+    Resume
+        ↓
+    ATS Engine
+        ↓
+    ATS Dashboard
+        ↓
+    Resume Optimizer
+        ↓
+    Detailed ATS Report
+        ↓
+    PDF Report
     """
 
     def __init__(self):
 
         self.engine = ATSEngine()
+        self.dashboard = ATSDashboard()
         self.optimizer = ResumeOptimizer()
         self.report_generator = ATSReportGenerator()
         self.pdf_generator = PDFReportGenerator()
@@ -46,6 +51,29 @@ class ResumePipeline:
 
         return self.optimizer.optimize(
             ats_report,
+        )
+
+    # ----------------------------------------------------
+    # Dashboard
+    # ----------------------------------------------------
+
+    def generate_dashboard(
+        self,
+        ats_report,
+        resume,
+    ):
+
+        candidate_name = "Candidate"
+
+        personal = resume.get("personal")
+
+        if personal and getattr(personal, "name", None):
+
+            candidate_name = personal.name
+
+        self.dashboard.show(
+            ats_report,
+            candidate_name,
         )
 
     # ----------------------------------------------------
@@ -78,6 +106,7 @@ class ResumePipeline:
         personal = resume.get("personal")
 
         if personal and getattr(personal, "name", None):
+
             candidate_name = personal.name
 
         pdf_path = self.pdf_generator.generate(
@@ -104,39 +133,30 @@ class ResumePipeline:
         jd,
     ):
 
-        # ATS Analysis
+        # Step 1 - ATS Analysis
         ats_report = self.analyze(
             resume,
             jd,
         )
 
-        # ---------------- DEBUG ----------------
+        # Step 2 - ATS Dashboard
+        self.generate_dashboard(
+            ats_report,
+            resume,
+        )
 
-        print()
-        print("=" * 70)
-        print("DEBUG - ATS REPORT")
-        print("=" * 70)
-        print("Matched Skills            :", ats_report.matched_skills)
-        print("Missing Skills            :", ats_report.missing_skills)
-        print("Strengths                :", ats_report.strengths)
-        print("Weaknesses               :", ats_report.weaknesses)
-        print("Matched Responsibilities :", ats_report.matched_responsibilities)
-        print("Missing Responsibilities :", ats_report.missing_responsibilities)
-        print("=" * 70)
-        print()
-
-        # Resume Optimization
+        # Step 3 - Resume Optimization
         optimization = self.optimize(
             ats_report,
         )
 
-        # Console Report
+        # Step 4 - Detailed Console Report
         self.generate_console_report(
             ats_report,
             optimization,
         )
 
-        # PDF Report
+        # Step 5 - PDF Report
         self.generate_pdf_report(
             ats_report,
             resume,
