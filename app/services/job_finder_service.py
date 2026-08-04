@@ -6,13 +6,13 @@ from app.data.all_skills import ALL_SKILLS
 from app.parsers.skill_extractor import SkillExtractor
 
 from app.providers.arbeitnow_provider import ArbeitnowProvider
-from app.providers.remoteok_provider import RemoteOKProvider
 from app.providers.mock_provider import MockProvider
 from app.providers.search_link_provider import SearchLinkProvider
 
 from app.services.job_search_service import JobSearchService
 
 from app.utils.job_ranker import JobRanker
+from app.utils.role_inference import RoleInference
 
 
 class JobFinderService:
@@ -27,17 +27,16 @@ class JobFinderService:
         Skill Extraction
             │
             ▼
-        Live Providers
+        AI Role Inference
             │
-            ├── Arbeitnow
-            ├── RemoteOK
-            └── Mock Provider (Fallback)
+            ▼
+        Live Job Providers
             │
             ▼
         Smart Ranking
             │
             ▼
-        Top 10 Jobs
+        Top Matching Jobs
             │
             ▼
         Smart Search Links
@@ -53,17 +52,12 @@ class JobFinderService:
         # Register Providers
         # --------------------------------------------------
 
-        # Live Provider 1
         self.search_service.add_provider(
             ArbeitnowProvider()
         )
 
-        # Live Provider 2
-        self.search_service.add_provider(
-            RemoteOKProvider()
-        )
+        # Mock Provider (Fallback)
 
-        # Fallback Provider
         self.search_service.add_provider(
             MockProvider()
         )
@@ -79,6 +73,7 @@ class JobFinderService:
             latest = experiences[0]
 
             if getattr(latest, "designation", ""):
+
                 return latest.designation
 
         return "Professional"
@@ -122,13 +117,29 @@ class JobFinderService:
 
             print("No matching skills detected.")
 
+        # --------------------------------------------------
+        # AI Role Inference
+        # --------------------------------------------------
+
+        inferred_roles = RoleInference.infer_roles(
+            resume_skills
+        )
+
+        print()
+        print("=" * 70)
+        print("AI RECOMMENDED ROLES")
+        print("=" * 70)
+
+        for index, inferred_role in enumerate(
+            inferred_roles,
+            start=1,
+        ):
+
+            print(f"{index}. {inferred_role}")
+
         print()
         print("Generating Search Query...")
         print("Searching Jobs...")
-
-        # --------------------------------------------------
-        # Start Timer
-        # --------------------------------------------------
 
         start_time = time.time()
 
@@ -163,10 +174,6 @@ class JobFinderService:
         )
 
         provider_count = self.search_service.provider_count()
-
-        # --------------------------------------------------
-        # Show only Top 10
-        # --------------------------------------------------
 
         jobs = jobs[:10]
 
@@ -206,8 +213,10 @@ class JobFinderService:
         # Smart Search Links
         # --------------------------------------------------
 
+        primary_role = inferred_roles[0]
+
         links = self.search_links.generate_links(
-            role,
+            primary_role,
             resume_skills,
         )
 
@@ -224,12 +233,14 @@ class JobFinderService:
         print()
 
         for platform in [
+
             "LinkedIn",
             "Naukri",
             "Indeed",
             "Foundit",
             "Wellfound",
             "Google Jobs",
+
         ]:
 
             print(platform)
