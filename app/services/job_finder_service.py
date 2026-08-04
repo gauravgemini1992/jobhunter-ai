@@ -6,6 +6,7 @@ from app.data.all_skills import ALL_SKILLS
 from app.parsers.skill_extractor import SkillExtractor
 
 from app.providers.arbeitnow_provider import ArbeitnowProvider
+from app.providers.adzuna_provider import AdzunaProvider
 from app.providers.mock_provider import MockProvider
 from app.providers.search_link_provider import SearchLinkProvider
 
@@ -17,9 +18,9 @@ from app.utils.role_inference import RoleInference
 
 class JobFinderService:
     """
-    Handles the complete Job Finder workflow.
+    JobHunter AI
 
-    Workflow
+    Complete Job Finder Workflow
 
         Resume
             │
@@ -30,10 +31,16 @@ class JobFinderService:
         AI Role Inference
             │
             ▼
-        Live Job Providers
+        Arbeitnow
             │
             ▼
-        Smart Ranking
+        Adzuna India
+            │
+            ▼
+        Mock Provider (Fallback)
+            │
+            ▼
+        Smart Job Ranking
             │
             ▼
         Top Matching Jobs
@@ -41,6 +48,8 @@ class JobFinderService:
             ▼
         Smart Search Links
     """
+
+    # --------------------------------------------------
 
     def __init__(self):
 
@@ -52,11 +61,19 @@ class JobFinderService:
         # Register Providers
         # --------------------------------------------------
 
+        # Primary Live Provider
+
         self.search_service.add_provider(
             ArbeitnowProvider()
         )
 
-        # Mock Provider (Fallback)
+        # India Jobs
+
+        self.search_service.add_provider(
+            AdzunaProvider()
+        )
+
+        # Fallback
 
         self.search_service.add_provider(
             MockProvider()
@@ -82,10 +99,14 @@ class JobFinderService:
 
     def _extract_skills(self, resume):
 
-        extractor = SkillExtractor(ALL_SKILLS)
+        extractor = SkillExtractor(
+            ALL_SKILLS
+        )
 
         return extractor.extract(
+
             resume.get("skills", "")
+
         )
 
     # --------------------------------------------------
@@ -104,21 +125,27 @@ class JobFinderService:
 
         role = self._extract_role(resume)
 
-        resume_skills = self._extract_skills(resume)
+        resume_skills = self._extract_skills(
+            resume
+        )
 
         print()
         print("Detected Skills")
 
         if resume_skills:
 
-            print(", ".join(resume_skills))
+            print(
+                ", ".join(resume_skills)
+            )
 
         else:
 
-            print("No matching skills detected.")
+            print(
+                "No matching skills detected."
+            )
 
         # --------------------------------------------------
-        # AI Role Inference
+        # AI Role Recommendation
         # --------------------------------------------------
 
         inferred_roles = RoleInference.infer_roles(
@@ -130,50 +157,101 @@ class JobFinderService:
         print("AI RECOMMENDED ROLES")
         print("=" * 70)
 
-        for index, inferred_role in enumerate(
+        for index, role_name in enumerate(
+
             inferred_roles,
+
             start=1,
+
         ):
 
-            print(f"{index}. {inferred_role}")
+            print(
+                f"{index}. {role_name}"
+            )
+
+        primary_role = (
+
+            inferred_roles[0]
+
+            if inferred_roles
+
+            else role
+
+        )
 
         print()
         print("Generating Search Query...")
         print("Searching Jobs...")
 
+        # --------------------------------------------------
+        # Search
+        # --------------------------------------------------
+
         start_time = time.time()
 
         jobs = self.search_service.search(
+
             keywords=resume_skills
+
         )
 
         jobs = self.job_ranker.rank_jobs(
+
             jobs,
+
             resume_skills,
+
         )
 
-        search_time = round(
+        elapsed = round(
+
             time.time() - start_time,
+
             2,
+
         )
 
         # --------------------------------------------------
         # Statistics
         # --------------------------------------------------
 
-        live_jobs = sum(
+        arbeitnow_jobs = sum(
+
             1
+
             for job in jobs
-            if job.source != "Mock Provider"
+
+            if job.source == "Arbeitnow"
+
+        )
+
+        adzuna_jobs = sum(
+
+            1
+
+            for job in jobs
+
+            if job.source == "Adzuna"
+
         )
 
         mock_jobs = sum(
+
             1
+
             for job in jobs
+
             if job.source == "Mock Provider"
+
         )
 
-        provider_count = self.search_service.provider_count()
+        live_jobs = arbeitnow_jobs + adzuna_jobs
+
+        provider_count = (
+
+            self.search_service.provider_count()
+
+        )
 
         jobs = jobs[:10]
 
@@ -182,11 +260,37 @@ class JobFinderService:
         print("JOB SEARCH SUMMARY")
         print("=" * 70)
 
-        print(f"🔎 Providers Used : {provider_count}")
-        print(f"🌍 Live Jobs Found : {live_jobs}")
-        print(f"🧪 Mock Jobs Added : {mock_jobs}")
-        print(f"🏆 Displayed Jobs  : {len(jobs)}")
-        print(f"⏱ Search Time     : {search_time} sec")
+        print(
+            f"🔎 Providers Used  : {provider_count}"
+        )
+
+        print(
+            f"🌍 Arbeitnow Jobs  : {arbeitnow_jobs}"
+        )
+
+        print(
+            f"🇮🇳 Adzuna Jobs    : {adzuna_jobs}"
+        )
+
+        print(
+            f"🧪 Mock Jobs       : {mock_jobs}"
+        )
+
+        print(
+            f"📦 Live Jobs Total : {live_jobs}"
+        )
+
+        print(
+            f"🏆 Displayed Jobs  : {len(jobs)}"
+        )
+
+        print(
+            f"⏱ Search Time     : {elapsed} sec"
+        )
+
+        # --------------------------------------------------
+        # Display Jobs
+        # --------------------------------------------------
 
         print()
         print("=" * 70)
@@ -196,16 +300,25 @@ class JobFinderService:
         if not jobs:
 
             print()
-            print("No matching jobs found.")
+            print(
+                "No matching jobs found."
+            )
+
             return
 
         for index, job in enumerate(
+
             jobs,
+
             start=1,
+
         ):
 
             print()
-            print(f"Rank #{index}")
+
+            print(
+                f"Rank #{index}"
+            )
 
             job.display()
 
@@ -213,11 +326,12 @@ class JobFinderService:
         # Smart Search Links
         # --------------------------------------------------
 
-        primary_role = inferred_roles[0]
-
         links = self.search_links.generate_links(
+
             primary_role,
+
             resume_skills,
+
         )
 
         print()
@@ -228,7 +342,10 @@ class JobFinderService:
         print()
         print("Generated Search Query")
         print("-" * 70)
-        print(links["query"])
+
+        print(
+            links["query"]
+        )
 
         print()
 
@@ -244,5 +361,9 @@ class JobFinderService:
         ]:
 
             print(platform)
-            print(links[platform])
+
+            print(
+                links[platform]
+            )
+
             print()

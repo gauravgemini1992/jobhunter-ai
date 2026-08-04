@@ -3,49 +3,167 @@ from urllib.parse import quote_plus
 
 class SearchLinkProvider:
     """
-    Generates smart job search links for multiple job portals.
+    JobHunter AI
 
-    Instead of depending on APIs, this provider builds
-    optimized search URLs using the candidate's target role
-    and skills.
+    Search Query Builder v2
 
-    Supported Platforms:
-        - LinkedIn
-        - Naukri
-        - Indeed India
-        - Foundit
-        - Wellfound
-        - Google Jobs
+    Builds optimized search queries for:
+
+    - LinkedIn
+    - Naukri
+    - Indeed
+    - Foundit
+    - Wellfound
+    - Google Jobs
     """
+
+    HIGH_PRIORITY = {
+
+        "customer success",
+        "crm",
+        "saas",
+        "salesforce",
+        "hubspot",
+        "account management",
+        "key account",
+        "enterprise",
+        "enterprise accounts",
+        "business development",
+        "sql",
+        "power bi",
+        "artificial intelligence",
+        "generative ai",
+        "python",
+        "aws",
+        "azure",
+        "react",
+        "java",
+
+    }
+
+    MEDIUM_PRIORITY = {
+
+        "renewals",
+        "quarterly business review",
+        "stakeholder management",
+        "customer retention",
+        "upsell",
+        "cross sell",
+        "go to market",
+        "analytics",
+        "cloud",
+        "docker",
+        "kubernetes",
+
+    }
+
+    # --------------------------------------------------
+
+    def _clean_role(
+        self,
+        role: str,
+    ) -> str:
+
+        if not role:
+            return "Professional"
+
+        role = role.strip()
+
+        replacements = {
+
+            "Professional": "Professional",
+
+            "Customer Success":
+                "Customer Success Manager",
+
+            "Account Manager":
+                "Enterprise Account Manager",
+
+            "Business Development":
+                "Business Development Manager",
+
+        }
+
+        return replacements.get(
+            role,
+            role,
+        )
+
+    # --------------------------------------------------
+
+    def _prioritize_skills(
+        self,
+        skills,
+    ):
+
+        if not skills:
+            return []
+
+        high = []
+        medium = []
+        low = []
+
+        seen = set()
+
+        for skill in skills:
+
+            skill = skill.strip()
+
+            key = skill.lower()
+
+            if key in seen:
+                continue
+
+            seen.add(key)
+
+            if key in self.HIGH_PRIORITY:
+
+                high.append(skill)
+
+            elif key in self.MEDIUM_PRIORITY:
+
+                medium.append(skill)
+
+            else:
+
+                low.append(skill)
+
+        return high + medium + low
 
     # --------------------------------------------------
 
     def generate_query(
         self,
-        role: str = "",
+        role="",
         skills=None,
-    ) -> str:
+    ):
 
         if skills is None:
             skills = []
 
-        words = []
+        role = self._clean_role(role)
 
-        if role:
-            words.append(role)
+        ordered_skills = self._prioritize_skills(
+            skills
+        )
 
-        # Add first few important skills
-        for skill in skills[:5]:
+        words = [role]
 
-            if skill.lower() not in role.lower():
+        for skill in ordered_skills:
 
-                words.append(skill)
+            if len(words) >= 6:
+                break
 
-        return " ".join(words).strip()
+            if skill.lower() in role.lower():
+                continue
+
+            words.append(skill)
+
+        return " ".join(words)
 
     # --------------------------------------------------
 
-    def linkedin(self, query: str) -> str:
+    def linkedin(self, query):
 
         return (
             "https://www.linkedin.com/jobs/search/"
@@ -55,18 +173,17 @@ class SearchLinkProvider:
 
     # --------------------------------------------------
 
-    def naukri(self, query: str) -> str:
+    def naukri(self, query):
 
         slug = query.lower().replace(" ", "-")
 
         return (
-            "https://www.naukri.com/"
-            f"{slug}-jobs"
+            f"https://www.naukri.com/{slug}-jobs"
         )
 
     # --------------------------------------------------
 
-    def indeed(self, query: str) -> str:
+    def indeed(self, query):
 
         return (
             "https://in.indeed.com/jobs?q="
@@ -75,7 +192,7 @@ class SearchLinkProvider:
 
     # --------------------------------------------------
 
-    def foundit(self, query: str) -> str:
+    def foundit(self, query):
 
         return (
             "https://www.foundit.in/srp/results"
@@ -85,7 +202,7 @@ class SearchLinkProvider:
 
     # --------------------------------------------------
 
-    def wellfound(self, query: str) -> str:
+    def wellfound(self, query):
 
         return (
             "https://wellfound.com/jobs"
@@ -95,7 +212,7 @@ class SearchLinkProvider:
 
     # --------------------------------------------------
 
-    def google_jobs(self, query: str) -> str:
+    def google_jobs(self, query):
 
         return (
             "https://www.google.com/search?q="
@@ -106,7 +223,7 @@ class SearchLinkProvider:
 
     def generate_links(
         self,
-        role: str = "",
+        role="",
         skills=None,
     ):
 
@@ -116,11 +233,19 @@ class SearchLinkProvider:
         )
 
         return {
+
             "query": query,
+
             "LinkedIn": self.linkedin(query),
+
             "Naukri": self.naukri(query),
+
             "Indeed": self.indeed(query),
+
             "Foundit": self.foundit(query),
+
             "Wellfound": self.wellfound(query),
+
             "Google Jobs": self.google_jobs(query),
+
         }
