@@ -6,6 +6,7 @@ from app.data.all_skills import ALL_SKILLS
 from app.parsers.skill_extractor import SkillExtractor
 
 from app.providers.arbeitnow_provider import ArbeitnowProvider
+from app.providers.remoteok_provider import RemoteOKProvider
 from app.providers.mock_provider import MockProvider
 from app.providers.search_link_provider import SearchLinkProvider
 
@@ -18,19 +19,27 @@ class JobFinderService:
     """
     Handles the complete Job Finder workflow.
 
-    Workflow:
+    Workflow
+
         Resume
-            ↓
+            │
+            ▼
         Skill Extraction
-            ↓
-        Live Job Providers
-            ↓
-        Mock Provider (Fallback)
-            ↓
+            │
+            ▼
+        Live Providers
+            │
+            ├── Arbeitnow
+            ├── RemoteOK
+            └── Mock Provider (Fallback)
+            │
+            ▼
         Smart Ranking
-            ↓
+            │
+            ▼
         Top 10 Jobs
-            ↓
+            │
+            ▼
         Smart Search Links
     """
 
@@ -44,9 +53,14 @@ class JobFinderService:
         # Register Providers
         # --------------------------------------------------
 
-        # Live Provider
+        # Live Provider 1
         self.search_service.add_provider(
             ArbeitnowProvider()
+        )
+
+        # Live Provider 2
+        self.search_service.add_provider(
+            RemoteOKProvider()
         )
 
         # Fallback Provider
@@ -113,7 +127,7 @@ class JobFinderService:
         print("Searching Jobs...")
 
         # --------------------------------------------------
-        # Search Timer
+        # Start Timer
         # --------------------------------------------------
 
         start_time = time.time()
@@ -148,8 +162,10 @@ class JobFinderService:
             if job.source == "Mock Provider"
         )
 
+        provider_count = self.search_service.provider_count()
+
         # --------------------------------------------------
-        # Display only Top 10 Jobs
+        # Show only Top 10
         # --------------------------------------------------
 
         jobs = jobs[:10]
@@ -159,6 +175,7 @@ class JobFinderService:
         print("JOB SEARCH SUMMARY")
         print("=" * 70)
 
+        print(f"🔎 Providers Used : {provider_count}")
         print(f"🌍 Live Jobs Found : {live_jobs}")
         print(f"🧪 Mock Jobs Added : {mock_jobs}")
         print(f"🏆 Displayed Jobs  : {len(jobs)}")
@@ -173,10 +190,12 @@ class JobFinderService:
 
             print()
             print("No matching jobs found.")
-
             return
 
-        for index, job in enumerate(jobs, start=1):
+        for index, job in enumerate(
+            jobs,
+            start=1,
+        ):
 
             print()
             print(f"Rank #{index}")

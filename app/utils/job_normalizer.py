@@ -5,13 +5,12 @@ from app.models.job_listing import JobListing
 
 class JobNormalizer:
     """
-    Converts raw API responses from different job providers
-    into a common JobListing model.
-
-    Every provider should pass its raw JSON dictionary
-    to one of these normalization methods.
+    Converts different job provider responses into a
+    common JobListing model.
     """
 
+    # --------------------------------------------------
+    # Arbeitnow
     # --------------------------------------------------
 
     @staticmethod
@@ -31,9 +30,11 @@ class JobNormalizer:
 
             experience="",
 
-            employment_type=job.get("job_types", [""])[0]
-            if job.get("job_types")
-            else "",
+            employment_type=(
+                job.get("job_types", [""])[0]
+                if job.get("job_types")
+                else ""
+            ),
 
             salary="Not Disclosed",
 
@@ -45,6 +46,8 @@ class JobNormalizer:
         )
 
     # --------------------------------------------------
+    # RemoteOK
+    # --------------------------------------------------
 
     @staticmethod
     def remoteok(job: Dict) -> JobListing:
@@ -55,7 +58,7 @@ class JobNormalizer:
 
             company=job.get("company", ""),
 
-            location="Remote",
+            location=job.get("location", "Remote"),
 
             description=job.get("description", ""),
 
@@ -67,7 +70,7 @@ class JobNormalizer:
 
             salary="Not Disclosed",
 
-            apply_url=job.get("apply_url", ""),
+            apply_url=job.get("url", ""),
 
             source="RemoteOK",
 
@@ -75,17 +78,37 @@ class JobNormalizer:
         )
 
     # --------------------------------------------------
+    # Adzuna
+    # --------------------------------------------------
 
     @staticmethod
     def adzuna(job: Dict) -> JobListing:
+
+        salary = "Not Disclosed"
+
+        if job.get("salary_min"):
+
+            salary = f"₹{int(job['salary_min']):,}"
 
         return JobListing(
 
             title=job.get("title", ""),
 
-            company=job.get("company", {}).get("display_name", ""),
+            company=job.get(
+                "company",
+                {},
+            ).get(
+                "display_name",
+                "",
+            ),
 
-            location=job.get("location", {}).get("display_name", ""),
+            location=job.get(
+                "location",
+                {},
+            ).get(
+                "display_name",
+                "",
+            ),
 
             description=job.get("description", ""),
 
@@ -95,19 +118,20 @@ class JobNormalizer:
 
             employment_type="",
 
-            salary=(
-                f"₹{int(job.get('salary_min', 0)):,}"
-                if job.get("salary_min")
-                else "Not Disclosed"
-            ),
+            salary=salary,
 
-            apply_url=job.get("redirect_url", ""),
+            apply_url=job.get(
+                "redirect_url",
+                "",
+            ),
 
             source="Adzuna",
 
             ats_match_score=0,
         )
 
+    # --------------------------------------------------
+    # Universal Normalizer
     # --------------------------------------------------
 
     @staticmethod
@@ -117,6 +141,8 @@ class JobNormalizer:
     ) -> List[JobListing]:
 
         normalized = []
+
+        provider = provider.lower()
 
         for job in jobs:
 
