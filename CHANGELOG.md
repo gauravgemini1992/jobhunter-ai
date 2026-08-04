@@ -1,20 +1,23 @@
 # Changelog
 
-## v0.9.1
+## v1.0.0 - Initial Release
 
 ### Added
-- Resume Pipeline
-- Resume Review Service
-- ATS Engine
-- Resume Optimizer
-- ATS Report Generator
 
-### Improved
-- Smart Skill Matching
-- Phrase Matching
-- JD Parsing
+- Resume ATS Review
+- Resume Skill Analysis
+- Resume PDF Report
+- Resume Recommendations
+- Job Finder
+- ATS Job Ranking
+- Smart Search Links
+- Company Research
+- Resume Parser
+- Skill Extraction Engine
 
-### Fixed
-- Pipeline Integration
-- Legacy ATS Flow
-- Accidental model directory cleanup
+### Upcoming
+
+- AI Resume Builder
+- Interview Preparation
+- Live Job Providers
+- Learning Roadmap

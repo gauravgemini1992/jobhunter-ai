@@ -1,8 +1,9 @@
 from menu import show_menu
-from jobs import find_jobs
 from profile_1 import load_profile, save_profile
 
 from app.services.resume_review_service import ResumeReviewService
+from app.services.job_finder_service import JobFinderService
+from app.services.company_research_service import CompanyResearchService
 
 
 def setup_profile():
@@ -37,7 +38,7 @@ def setup_profile():
                     name,
                     role,
                     location,
-                    experience
+                    experience,
                 )
 
                 print("\n✅ Profile Updated Successfully!\n")
@@ -59,7 +60,7 @@ def setup_profile():
         name,
         role,
         location,
-        experience
+        experience,
     )
 
     print("\n✅ Profile Created Successfully!\n")
@@ -73,24 +74,39 @@ def main():
     print("🚀                 JOBHUNTER AI")
     print("=" * 60)
 
-    name = setup_profile()
+    setup_profile()
 
     while True:
 
         choice = show_menu()
 
+        # --------------------------------------------------
+        # Find Matching Jobs
+        # --------------------------------------------------
+
         if choice == "1":
 
-            find_jobs(name)
+            JobFinderService().run()
+
+        # --------------------------------------------------
+        # Resume Review
+        # --------------------------------------------------
 
         elif choice == "2":
 
             ResumeReviewService().run()
 
+        # --------------------------------------------------
+        # Company Research
+        # --------------------------------------------------
+
         elif choice == "3":
 
-            print("\n🏢 Company Research Module")
-            print("Coming Soon...\n")
+            CompanyResearchService().run()
+
+        # --------------------------------------------------
+        # Exit
+        # --------------------------------------------------
 
         elif choice == "4":
 
