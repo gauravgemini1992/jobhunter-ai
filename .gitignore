@@ -38,3 +38,4 @@ logs/
 *.qmlc
 *.jsc.env
 output/
+.env
