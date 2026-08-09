@@ -37,3 +37,4 @@ logs/
 # Qt
 *.qmlc
 *.jsc.env
+output/
