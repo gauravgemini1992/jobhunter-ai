@@ -36,4 +36,4 @@ logs/
 
 # Qt
 *.qmlc
-*.jsc
+*.jsc.env
