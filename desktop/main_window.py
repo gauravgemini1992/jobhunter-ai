@@ -1,15 +1,13 @@
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction
-
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
     QHBoxLayout,
     QVBoxLayout,
-    QLabel,
-    QPushButton,
-    QFrame
 )
+
+from desktop.ui.components.sidebar import Sidebar
+from desktop.ui.components.topbar import TopBar
+from desktop.ui.pages.dashboard import DashboardPage
 
 
 class MainWindow(QMainWindow):
@@ -18,184 +16,83 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("JobHunter AI • AI Career Copilot")
-        self.resize(1500,900)
+        self.resize(1500, 900)
+        self.setMinimumSize(1280, 800)
 
         self.build_ui()
 
     def build_ui(self):
 
-        central = QWidget()
+        # ==========================================
+        # Central Widget
+        # ==========================================
 
+        central = QWidget()
         self.setCentralWidget(central)
 
-        layout = QHBoxLayout(central)
+        main_layout = QHBoxLayout(central)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
-        layout.setContentsMargins(0,0,0,0)
-
-        layout.setSpacing(0)
-
+        # ==========================================
         # Sidebar
+        # ==========================================
 
-        sidebar = QFrame()
+        sidebar = Sidebar()
+        main_layout.addWidget(sidebar)
 
-        sidebar.setFixedWidth(250)
-
-        sidebar.setObjectName("sidebar")
-
-        sidebar_layout = QVBoxLayout(sidebar)
-
-        sidebar_layout.setContentsMargins(20,20,20,20)
-
-        title = QLabel("JobHunter AI")
-
-        title.setObjectName("logo")
-
-        sidebar_layout.addWidget(title)
-
-        subtitle = QLabel("AI Career Copilot")
-
-        subtitle.setObjectName("subtitle")
-
-        sidebar_layout.addWidget(subtitle)
-
-        sidebar_layout.addSpacing(30)
-
-        menu = [
-
-            "Dashboard",
-
-            "Resume Intelligence",
-
-            "ATS Intelligence",
-
-            "Smart Job Match",
-
-            "Company Intelligence",
-
-            "AI Career Coach",
-
-            "Reports",
-
-            "Analytics",
-
-            "Settings"
-
-        ]
-
-        for item in menu:
-
-            button = QPushButton(item)
-
-            button.setCursor(Qt.PointingHandCursor)
-
-            sidebar_layout.addWidget(button)
-
-        sidebar_layout.addStretch()
-
-        # Content
+        # ==========================================
+        # Main Content Area
+        # ==========================================
 
         content = QWidget()
 
         content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(30, 20, 30, 20)
+        content_layout.setSpacing(20)
 
-        heading = QLabel("Career Command Center")
+        # ==========================================
+        # Top Navigation
+        # ==========================================
 
-        heading.setObjectName("heading")
+        topbar = TopBar()
+        content_layout.addWidget(topbar)
 
-        content_layout.addWidget(heading)
+        # ==========================================
+        # Dashboard Page
+        # ==========================================
 
-        desc = QLabel(
+        dashboard = DashboardPage()
+        content_layout.addWidget(dashboard)
 
-            "Welcome back! Your AI Career Copilot is ready."
+        # Add content area to window
 
-        )
+        main_layout.addWidget(content)
 
-        desc.setObjectName("desc")
-
-        content_layout.addWidget(desc)
-
-        content_layout.addStretch()
-
-        layout.addWidget(sidebar)
-
-        layout.addWidget(content)
+        # ==========================================
+        # Global Styles
+        # ==========================================
 
         self.setStyleSheet("""
+            QMainWindow {
+                background: #0F172A;
+            }
 
-        QMainWindow{
+            QWidget {
+                background: #0F172A;
+                color: white;
+                font-family: Arial;
+                font-size: 14px;
+            }
 
-            background:#0F172A;
+            QLabel#heading {
+                font-size: 34px;
+                font-weight: bold;
+                color: white;
+            }
 
-        }
-
-        QWidget{
-
-            background:#0F172A;
-
-            color:white;
-
-            font-size:14px;
-
-            font-family:Segoe UI;
-
-        }
-
-        #sidebar{
-
-            background:#111827;
-
-        }
-
-        #logo{
-
-            font-size:28px;
-
-            font-weight:700;
-
-        }
-
-        #subtitle{
-
-            color:#94A3B8;
-
-        }
-
-        QPushButton{
-
-            background:transparent;
-
-            color:white;
-
-            border:none;
-
-            text-align:left;
-
-            padding:14px;
-
-            border-radius:8px;
-
-        }
-
-        QPushButton:hover{
-
-            background:#1E293B;
-
-        }
-
-        #heading{
-
-            font-size:34px;
-
-            font-weight:700;
-
-        }
-
-        #desc{
-
-            color:#94A3B8;
-
-            font-size:16px;
-
-        }
-
+            QLabel#desc {
+                font-size: 16px;
+                color: #94A3B8;
+            }
         """)
