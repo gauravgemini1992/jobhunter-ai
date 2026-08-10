@@ -1,10 +1,13 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 
 from desktop.ui.theme.colors import SIDEBAR
 
 
 class Sidebar(QWidget):
+
+    page_changed = Signal(int)
+
     def __init__(self):
         super().__init__()
 
@@ -24,21 +27,25 @@ class Sidebar(QWidget):
         layout.addWidget(subtitle)
         layout.addSpacing(30)
 
-        items = [
+        menu = [
             ("🏠", "Dashboard"),
             ("📄", "Resume Intelligence"),
             ("🎯", "ATS Intelligence"),
             ("💼", "Smart Job Match"),
             ("🏢", "Companies"),
-            ("🤖", "AI Coach"),
-            ("📊", "Analytics"),
             ("📑", "Reports"),
             ("⚙", "Settings"),
         ]
 
-        for icon, text in items:
+        for index, (icon, text) in enumerate(menu):
+
             button = QPushButton(f"{icon}   {text}")
             button.setCursor(Qt.PointingHandCursor)
+
+            button.clicked.connect(
+                lambda checked=False, i=index: self.page_changed.emit(i)
+            )
+
             layout.addWidget(button)
 
         layout.addStretch()
@@ -49,27 +56,27 @@ class Sidebar(QWidget):
             }}
 
             QLabel#logo {{
-                font-size: 28px;
-                font-weight: bold;
-                color: white;
+                font-size:28px;
+                font-weight:bold;
+                color:white;
             }}
 
             QLabel#subtitle {{
-                color: #94A3B8;
-                font-size: 13px;
+                color:#94A3B8;
+                font-size:13px;
             }}
 
             QPushButton {{
-                border: none;
-                text-align: left;
-                padding: 12px;
-                border-radius: 10px;
-                color: white;
-                background: transparent;
-                font-size: 14px;
+                border:none;
+                text-align:left;
+                padding:12px;
+                border-radius:10px;
+                color:white;
+                background:transparent;
+                font-size:14px;
             }}
 
             QPushButton:hover {{
-                background: #1E293B;
+                background:#1E293B;
             }}
         """)

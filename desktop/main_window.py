@@ -3,11 +3,19 @@ from PySide6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QVBoxLayout,
+    QStackedWidget,
 )
 
 from desktop.ui.components.sidebar import Sidebar
 from desktop.ui.components.topbar import TopBar
+
 from desktop.ui.pages.dashboard import DashboardPage
+from desktop.ui.pages.resume import ResumePage
+from desktop.ui.pages.ats import ATSPage
+from desktop.ui.pages.jobs import JobsPage
+from desktop.ui.pages.companies import CompaniesPage
+from desktop.ui.pages.reports import ReportsPage
+from desktop.ui.pages.settings import SettingsPage
 
 
 class MainWindow(QMainWindow):
@@ -38,8 +46,8 @@ class MainWindow(QMainWindow):
         # Sidebar
         # ==========================================
 
-        sidebar = Sidebar()
-        main_layout.addWidget(sidebar)
+        self.sidebar = Sidebar()
+        main_layout.addWidget(self.sidebar)
 
         # ==========================================
         # Main Content Area
@@ -55,22 +63,46 @@ class MainWindow(QMainWindow):
         # Top Navigation
         # ==========================================
 
-        topbar = TopBar()
-        content_layout.addWidget(topbar)
+        self.topbar = TopBar()
+        content_layout.addWidget(self.topbar)
 
         # ==========================================
-        # Dashboard Page
+        # Page Stack
         # ==========================================
 
-        dashboard = DashboardPage()
-        content_layout.addWidget(dashboard)
+        self.stack = QStackedWidget()
 
-        # Add content area to window
+        self.dashboard = DashboardPage()
+        self.resume = ResumePage()
+        self.ats = ATSPage()
+        self.jobs = JobsPage()
+        self.companies = CompaniesPage()
+        self.reports = ReportsPage()
+        self.settings = SettingsPage()
+
+        self.stack.addWidget(self.dashboard)      # Index 0
+        self.stack.addWidget(self.resume)         # Index 1
+        self.stack.addWidget(self.ats)            # Index 2
+        self.stack.addWidget(self.jobs)           # Index 3
+        self.stack.addWidget(self.companies)      # Index 4
+        self.stack.addWidget(self.reports)        # Index 5
+        self.stack.addWidget(self.settings)       # Index 6
+
+        # ==========================================
+        # Connect Sidebar Navigation
+        # ==========================================
+
+        self.sidebar.page_changed.connect(self.stack.setCurrentIndex)
+
+        # Show Dashboard by default
+        self.stack.setCurrentIndex(0)
+
+        content_layout.addWidget(self.stack)
 
         main_layout.addWidget(content)
 
         # ==========================================
-        # Global Styles
+        # Global Theme
         # ==========================================
 
         self.setStyleSheet("""
